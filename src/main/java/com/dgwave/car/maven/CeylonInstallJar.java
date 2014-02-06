@@ -32,7 +32,9 @@ import com.dgwave.car.repo.CeylonRepoLayout;
 import com.dgwave.car.repo.CeylonUtil;
 
 /**
- * The 'ceylon:install-jar' Mojo.
+ * Project context not required. use the `-Dfile` parameter to point to a jar file.  A `pom.xml`
+ * file in the same directory or within the jar file will be parsed for dependencies. Installs into the 
+ * Ceylon 'user' repository. Target can be changed to `cache` or `local`.
  * @author Akber Choudhry
  */
 @Mojo(name = "install-jar", requiresProject = false, aggregator = true, threadSafe = false)

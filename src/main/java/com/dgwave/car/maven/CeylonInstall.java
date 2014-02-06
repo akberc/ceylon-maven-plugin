@@ -32,7 +32,9 @@ import com.dgwave.car.repo.CeylonRepoLayout;
 import com.dgwave.car.repo.CeylonUtil;
 
 /**
- * The 'ceylon:install' Mojo.
+ * From within a project, installs packaged jar artifacts into the Ceylon 'user' repository.
+ * Target can be changed to 'cache' or 'local'. Reactor projects (modules) are supported.
+ * Module dependencies set according to the Maven project model.
  * @author Akber Chpudhry
  */
 @Mojo(name = "install", requiresProject = true, defaultPhase = LifecyclePhase.INSTALL, threadSafe = false)
