@@ -66,7 +66,7 @@ public class CeylonInstall extends AbstractMojo {
      * Use this for artifacts that does not need to be installed in the local repository.
      *
      */
-    @Parameter(property = "maven.install.skip", defaultValue = "false")
+    @Parameter(property = "ceylon.install.skip", defaultValue = "false")
     private boolean skip;
 
     /**
@@ -200,13 +200,16 @@ public class CeylonInstall extends AbstractMojo {
         
         for (Dependency dep : proj.getDependencies()) {
             if (dep.getVersion() != null && !"".equals(dep.getVersion())) {
-                module.addDependency(new ModuleIdentifier(
-                    CeylonUtil.ceylonModuleBaseName(dep.getGroupId(), dep.getArtifactId()), dep.getVersion(), 
-                        dep.isOptional(), false)
-                ); 
+                if (!"test".equals(dep.getScope()) && dep.getSystemPath() == null) {
+                    module.addDependency(new ModuleIdentifier(
+                        CeylonUtil.ceylonModuleBaseName(dep.getGroupId(), dep.getArtifactId()), dep.getVersion(), 
+                            dep.isOptional(), false)
+                    ); 
+                }
             } else {
                 throw new MojoExecutionException(
-                    "Dependency version could not be determined from the POM. Aborting.");
+                    "Dependency version for " + dep + " in project " + proj 
+                    + "could not be determined from the POM. Aborting.");
             }
         }
         

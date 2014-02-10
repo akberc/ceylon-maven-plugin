@@ -1,4 +1,4 @@
-package com.dgwave.car.maven;
+package com.dgwave.car.repo;
 
 import static org.junit.Assert.assertEquals;
 

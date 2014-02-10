@@ -1,10 +1,15 @@
 package com.dgwave.car.repo;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.math.BigInteger;
 import java.security.MessageDigest;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.codehaus.plexus.util.IOUtil;
@@ -42,9 +47,19 @@ public final class CeylonUtil {
     private static final int CHECKSUM_BUFFER_SIZE = 65536 * 2;
 
     /**
+     * Regular buffer size.
+     */
+    private static final int BUFFER_SIZE = 4096;
+    
+    /**
      * Number of ways in which a Ceylon Java dependencies can be represented.
      */
     public static final int NUM_CEYLON_JAVA_DEP_TYPES = 3;
+
+    /**
+     * ceylon.repo.
+     */
+    public static final String CEYLON_REPO = "ceylon.repo";
     
     /**
      * Hidden constructor.
@@ -171,5 +186,79 @@ public final class CeylonUtil {
         } else {
             throw new MojoExecutionException("Failed to calculate digest checksum for " + installedFile); 
         }
-    }    
+    }
+
+    /**
+     * Extracts a single file from a zip archive.
+     * @param in Input zip stream
+     * @param outdir Output directory
+     * @param name File name
+     * @throws IOException In case of IO error
+     */
+    public static void extractFile(final ZipInputStream in, final File outdir, final String name) throws IOException {
+        byte[] buffer = new byte[BUFFER_SIZE];
+        BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(new File(outdir, name)));
+        int count = -1;
+        while ((count = in.read(buffer)) != -1) {
+            out.write(buffer, 0, count);
+        }
+        out.close();
+    }
+
+    /**
+     * Creates directories from an existing file to an additional path.
+     * @param outdir Existing directory
+     * @param path Additional path
+     */
+    public static void mkdirs(final File outdir, final String path) {
+        File d = new File(outdir, path);
+        if (!d.exists()) {
+            d.mkdirs();
+        }
+    }
+
+    /**
+     * Returns the directory part of path string.
+     * @param path Input path
+     * @return String The directory part of the path
+     */
+    public static String dirpart(final String path) {
+        int s = path.lastIndexOf(File.separatorChar);
+        if (s != -1) {
+            return path.substring(0, s);
+        } else {
+            return null;
+        } 
+    }
+
+    /***
+     * Extract zipfile to outdir with complete directory structure.
+     * 
+     * @param zipfile Input .zip file
+     * @param outdir Output directory
+     */
+    public static void extract(final File zipfile, final File outdir) {
+        try {
+            ZipInputStream zin = new ZipInputStream(new FileInputStream(zipfile));
+            ZipEntry entry;
+            String name, dir;
+            while ((entry = zin.getNextEntry()) != null) {
+                name = entry.getName();
+                if (entry.isDirectory()) {
+                    mkdirs(outdir, name);
+                    continue;
+                }
+
+                dir = dirpart(name);
+                if (dir != null) {
+                    mkdirs(outdir, dir);
+                }
+
+                extractFile(zin, outdir, name);
+            }
+            zin.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    } 
 }

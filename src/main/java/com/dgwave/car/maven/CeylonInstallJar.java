@@ -17,6 +17,9 @@ import org.apache.maven.artifact.handler.DefaultArtifactHandler;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.repository.DefaultArtifactRepository;
 import org.apache.maven.artifact.repository.layout.ArtifactRepositoryLayout;
+import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
+import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
+import org.apache.maven.artifact.resolver.DefaultArtifactResolver;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
@@ -63,11 +66,11 @@ public class CeylonInstallJar extends CeylonInstall {
     /**
      * The file to be installed in the local repository.
      */
-    @Parameter(property = "jar", required = true)
-    private File file;
+    @Parameter(property = "jar")
+    private File jar;
   
     /**
-     * Location of an existing POM file to be installed alongside the main artifact, given by the {@link #file}
+     * Location of an existing POM file to be installed alongside the main artifact, given by the {@link #jar}
      * parameter.
      * 
      * @since 2.1
@@ -107,10 +110,28 @@ public class CeylonInstallJar extends CeylonInstall {
      */
     public void execute() throws MojoExecutionException {
         
-        if (!file.exists()) {
-            String message = "The specified file '" + file.getPath() + "' not exists";
-            getLog().error(message);
-            throw new MojoExecutionException(message);
+        if (jar == null || !jar.exists()) {
+            if (gavExists()) { // attempt to resolve jar from GAV
+                DefaultArtifactResolver resolver = new DefaultArtifactResolver();
+                ArtifactResolutionResult result = resolver.resolve(new ArtifactResolutionRequest()
+                    .setArtifact(new DefaultArtifact(groupId, artifactId, version, null, "jar", null, 
+                        new DefaultArtifactHandler("jar")))
+                );
+                
+                if (result.isSuccess()) {
+                    jar = result.getArtifacts().iterator().next().getFile();
+                } else {
+                    String message = "Jar file '" + jar.getPath() + "' not specified and "
+                        + "GAV coordinates could not be resolved";
+                    getLog().error(message);
+                    throw new MojoExecutionException(message);                    
+                }
+            } else {
+                String message = "Jar file '" + jar.getPath() + "' does not exixt and "
+                    + "GAV coordinates not specified";
+                getLog().error(message);
+                throw new MojoExecutionException(message);
+            }
         }
         
         try {
@@ -125,17 +146,17 @@ public class CeylonInstallJar extends CeylonInstall {
             throw new MojoExecutionException("MalformedURLException: " + e.getMessage(), e);
         }
         
-        if (pomFile != null) {
+        if (pomFile != null) { // explicitly specified
            processModel(readModel(pomFile));
-        } else if (new File(file.getParentFile(), "pom.xml").exists()) {
-            processModel(readModel(new File(file.getParentFile(), "pom.xml"))); 
+        } else if (new File(jar.getParentFile(), "pom.xml").exists()) { // pom.xml in the same directory
+            processModel(readModel(new File(jar.getParentFile(), "pom.xml"))); 
         } else {
             boolean foundPom = false;
 
             try {
                 Pattern pomEntry = Pattern.compile("META-INF/maven/.*/pom\\.xml");
 
-                JarFile jarFile = new JarFile(file);
+                JarFile jarFile = new JarFile(jar);
 
                 Enumeration<JarEntry> jarEntries = jarFile.entries();
 
@@ -163,7 +184,7 @@ public class CeylonInstallJar extends CeylonInstall {
                 }
 
                 if (!foundPom) {
-                    getLog().info("pom.xml not found in " + file.getName());
+                    getLog().info("pom.xml not found in " + jar.getName());
                 }
             } catch (IOException e) {
                 getLog().warn("This jar file was not packaged by Maven");
@@ -174,7 +195,7 @@ public class CeylonInstallJar extends CeylonInstall {
             throw new MojoExecutionException("POM packaging is not 'jar' ");
         }
         
-        if (!file.getName().endsWith(".jar")) {
+        if (!jar.getName().endsWith(".jar")) {
             throw new MojoExecutionException("Jar File extension must be 'jar'  ");
         }
     
@@ -190,7 +211,17 @@ public class CeylonInstallJar extends CeylonInstall {
             throw new MojoExecutionException("Version is empty  ");
         }
         
-        installJar(file);
+        installJar(jar);
+    }
+
+    /**
+     * Determines if the GAV coordinates are specified.
+     * @return True if all three exist, false otherwise
+     */
+    private boolean gavExists() {
+        return groupId != null && !"".equals(groupId)
+            && artifactId != null && !"".equals(artifactId)
+            && version != null && !"".equals(version);
     }
 
     /**
@@ -209,10 +240,18 @@ public class CeylonInstallJar extends CeylonInstall {
             
             File artifactFile = new File(localRepository.getBasedir(), 
                 localRepository.pathOf(artifact));
+
             installAdditional(artifactFile, ".sha1", 
                 CeylonUtil.calculateChecksum(artifactFile), false);
-            installAdditional(artifactFile, ".module", 
-                calculateDependencies(new MavenProject(model)), true);
+            
+            if (model != null) {
+                String deps = calculateDependencies(new MavenProject(model));
+
+                if (!"".equals(deps)) {
+                    installAdditional(artifactFile, "module.properties", deps, false);
+                    installAdditional(artifactFile, ".module", deps, true);
+                }
+            }            
         } catch (Exception e) {
             throw new MojoExecutionException(e.getMessage(), e);
         }

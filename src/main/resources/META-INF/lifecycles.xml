@@ -1,0 +1,17 @@
+<lifecycles>  
+  <lifecycle>  
+    <id>car</id>  
+    <phases>  
+      <phase>  
+        <id>compile</id>  
+        <executions>  
+          <execution>  
+            <goals>  
+              <goal>compile</goal>  
+            </goals>  
+          </execution>  
+        </executions>  
+      </phase>  
+    </phases>  
+  </lifecycle>  
+</lifecycles>  

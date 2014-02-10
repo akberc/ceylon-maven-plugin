@@ -4,11 +4,12 @@
 
     <groupId>com.dgwave.car</groupId>
     <artifactId>ceylon-maven-plugin</artifactId>
-    <version>0.3</version>
+    <version>0.4</version>
     <name>Ceylon Maven Plugin</name>
     <description>Ceylon Maven Plugin</description>
     <packaging>maven-plugin</packaging>
-
+    <url>http://www.dgwave.com/ceylon</url>
+    
     <dependencies>
         <dependency>
             <groupId>org.apache.maven</groupId>
