@@ -6,10 +6,7 @@ Maven Plugin for interaction with Ceylon repositories
 
 - Minimum requirements: Java 7 and Maven 3.0.5
 
-### Build the plugin with
-- `mvn clean install`
-
-### Use the plugin with the following snippet in the `pom.xml` of a `jar` project
+### Plugin is in Maven Central repository. Use the plugin with the following snippet in the `pom.xml` of a `jar` project
 ```xml
 <build>
  ...
@@ -18,7 +15,8 @@ Maven Plugin for interaction with Ceylon repositories
         <plugin>
             <groupId>com.dgwave.car</groupId> 
             <artifactId>ceylon-maven-plugin</artifactId> 
-            <version>0.3</version> 
+            <version>0.3</version>
+            <extensions>true</extensions>
         </plugin>
      ...
     </plugins>
@@ -37,6 +35,20 @@ Project context not required. use the `-Dfile` parameter to point to a jar file.
 file in the same directory or within the jar file will be parsed for dependencies. Installs into the 
 Ceylon 'user' repository. Target can be changed to `cache` or `local`.
 
+- `ceylon:sdk-check`
+Checks for the presence of the Ceylon system repo, which can be configured through:
+ - System property `ceylon.repo`
+ - Property `ceylon.repo` in an active profile in Maven `settings.xml`
+ - `repo` folder under the path specifiied in `CEYLON_HOME` environment variable
+
+- `ceylon:sdk-download`
+Downloads the SDK to a location defined in the `-Dceylon.sdk.downloadTo` property.
+Path defaults to the `.ceylon` directory under the user's home directory. The download
+URL points to the Ceylon 1.0.0 release, but can be changed by the `ceylon.sdk.fromURL` property.
+
 - `ceylon:help`
 Display help information on ceylon-maven-plugin.
 Call `mvn ceylon:help -Ddetail=true -Dgoal=<goal-name>` to display parameter details.
+
+### Build the Ceylon Maven plugin with
+- `mvn clean install`
