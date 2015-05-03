@@ -1,4 +1,4 @@
-package com.dgwave.car.repo;
+package com.dgwave.car.common;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -11,6 +11,8 @@ import java.security.MessageDigest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.DefaultArtifact;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.codehaus.plexus.util.IOUtil;
 
@@ -54,7 +56,7 @@ public final class CeylonUtil {
     /**
      * Number of ways in which a Ceylon Java dependencies can be represented.
      */
-    public static final int NUM_CEYLON_JAVA_DEP_TYPES = 3;
+    public static final int NUM_CEYLON_JAVA_DEP_TYPES = 4;
 
     /**
      * ceylon.repo.
@@ -78,6 +80,29 @@ public final class CeylonUtil {
             return "";
         }
         return dotSep.replace(GROUP_SEPARATOR, PATH_SEPARATOR);
+    }
+
+    public static String ceylonSystemFullPath(org.eclipse.aether.artifact.Artifact artifact, String type) {
+        // TODO map to .ceylon/config mapping
+        return systemRepo() + File.separator
+            + ceylonRepoPath(artifact.getGroupId(), artifact.getArtifactId(), 
+                artifact.getVersion(), artifact.getClassifier(), type);
+    }
+
+    public static String systemRepo() {
+        return System.getProperty("ceylon.repo", System.getProperty("user.home")
+            + File.separator + ".ceylon" + File.separator + "repo");
+    }
+    
+    public static String ceylonSystemFullPath(Artifact artifact, String type) {
+
+        // TODO map to .ceylon/config mapping
+        return systemRepo()
+        
+            + File.separator
+            
+            + ceylonRepoPath(artifact.getGroupId(), artifact.getArtifactId(), 
+            artifact.getVersion(), artifact.getClassifier(), type);
     }
     
     /**
@@ -260,5 +285,16 @@ public final class CeylonUtil {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static Artifact toArtifact(String name, String version) {
+        int d = name.lastIndexOf('.');
+        String g = null, a = null;
+        if (d == -1) {
+            g = name; a = name;
+        } else {
+            g = name.substring(0, d); a = name.substring(d + 1);
+        }
+        return new DefaultArtifact(g, a, version, null, null, null, null);
     } 
 }

@@ -15,10 +15,10 @@ import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.logging.Logger;
 
-import com.dgwave.car.repo.CeylonUtil;
+import com.dgwave.car.common.CeylonUtil;
 
 /**
- * If the Ceylon plugin is included as an extension, it will try to set up SDK.
+ * If the Ceylon plugin is used or should be used, tries to find the SDK.
  * 
  * @author Akber Choudhry
  * 
@@ -26,18 +26,45 @@ import com.dgwave.car.repo.CeylonUtil;
 @Component(role = AbstractMavenLifecycleParticipant.class, hint = "ceylon")
 public class CeylonLifecycleParticipant extends AbstractMavenLifecycleParticipant {
 
+    @Requirement
+    private Logger logger;
+    
     /**
      * Runtime information.
      */
     @Requirement
     private RuntimeInformation runtime;
 
-    /**
-     * Logger.
-     */
-    @Requirement
-    private Logger logger;
-
+    private void findCeylonRepo(MavenSession session) throws MavenExecutionException {
+        String ceylonRepo = System.getProperty("ceylon.repo");
+        // check from settings
+        if (ceylonRepo == null) {
+            List<String> activeProfiles = session.getSettings().getActiveProfiles();
+            for (String profile : activeProfiles) {
+                Profile p = session.getSettings().getProfilesAsMap().get(profile);
+                if (p != null && p.getProperties() != null 
+                        && p.getProperties().get(CeylonUtil.CEYLON_REPO) != null) {
+                    logger.info("Property ceylon.repo found in Maven settings.xml in profile " + profile);
+                    ceylonRepo = (String) p.getProperties().get(CeylonUtil.CEYLON_REPO);
+                    System.setProperty(CeylonUtil.CEYLON_REPO, ceylonRepo);
+                    return;
+                }
+            }
+        }
+        
+        if (ceylonRepo == null) {
+            // last resort
+            CeylonSdkCheck mojo = new CeylonSdkCheck();
+            
+            try {
+                mojo.execute();
+                ceylonRepo = System.getProperty(CeylonUtil.CEYLON_REPO);
+            } catch (MojoExecutionException e) {
+                throw new MavenExecutionException("Ceylon Maven plugin enabled but: ", e);
+            }
+        }
+    };
+    
     /**
      * Interception after projects are known.
      * @param session The Maven session
@@ -45,47 +72,26 @@ public class CeylonLifecycleParticipant extends AbstractMavenLifecycleParticipan
      */
     @Override
     public void afterProjectsRead(final MavenSession session) throws MavenExecutionException {
-        
-        if (session.getGoals().contains("help")
-            || session.getGoals().contains("ceylon:help")
-            || session.getGoals().contains("ceylon:sdk-check")) {
-
-            return;
-        }
-        
+        boolean anyProject = false;
         for (MavenProject project : session.getProjects()) {
             if (project.getPlugin("ceylon") != null
+            	|| project.getPlugin("ceylon-maven-plugin") != null
+            	|| "ceylon".equals(project.getArtifact().getArtifactHandler().getPackaging())
                 || "car".equals(project.getArtifact().getArtifactHandler().getPackaging())
+                || "ceylon-jar".equals(project.getArtifact().getArtifactHandler().getPackaging())
                 || usesCeylonRepo(project)) {
-
-                logger.info("At least one project is using the Ceylon plugin. Checking for SDK");
-
-                String ceylonRepo = System.getProperty("ceylon.repo");
-
-                if (ceylonRepo == null) {
-                    List<String> activeProfiles = session.getSettings().getActiveProfiles();
-                    for (String profile : activeProfiles) {
-                        Profile p = session.getSettings().getProfilesAsMap().get(profile);
-                        if (p != null && p.getProperties() != null 
-                                && p.getProperties().get(CeylonUtil.CEYLON_REPO) != null) {
-                            logger.info("Property ceylon.repo found in Maven settings.xml in profile " + profile); 
-                            System.setProperty(CeylonUtil.CEYLON_REPO, 
-                                (String) p.getProperties().get(CeylonUtil.CEYLON_REPO));
-                            return;
-                        }
-                    }
-                    
-                    // last resort
-                    CeylonSdkCheck mojo = new CeylonSdkCheck();
-
-                    try {
-                        mojo.execute();
-                    } catch (MojoExecutionException e) {
-                        throw new MavenExecutionException("At least one project uses the Ceylon Maven plugin.", e);
-                    }
-                }
+            	anyProject = true;
             }
         }
+        if (anyProject) {
+        	logger.info("At least one project is using the Ceylon plugin. Preparing.");
+        	findCeylonRepo(session);
+        }
+        logger.info("Adding Ceylon repositories to build");
+        session.getRequest().setWorkspaceReader(
+        		new CeylonWorkspaceReader(
+        				session.getRequest().getWorkspaceReader(),
+        				logger));
     }
 
     /**
@@ -99,9 +105,9 @@ public class CeylonLifecycleParticipant extends AbstractMavenLifecycleParticipan
                 return true;
             }
         }
-
-        for (Artifact ext : project.getExtensionArtifacts()) {
-            if ("ceylon-maven-plugin".equals(ext.getArtifactId())) {
+        
+        for (Artifact ext : project.getPluginArtifacts()) {
+            if (ext.getArtifactId().startsWith("ceylon")) {
                 return true;
             }
         }

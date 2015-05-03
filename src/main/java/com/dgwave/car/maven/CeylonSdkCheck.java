@@ -10,7 +10,7 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
-import static com.dgwave.car.repo.CeylonUtil.CEYLON_REPO;;
+import static com.dgwave.car.common.CeylonUtil.CEYLON_REPO;;
 
 /**
  * Looks up <code>ceylon.repo</code> or <code>CEYLON_HOME</code> system properties and tries to locate

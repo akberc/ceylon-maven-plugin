@@ -13,6 +13,8 @@ import org.codehaus.plexus.component.annotations.Component;
 import org.eclipse.aether.metadata.Metadata;
 import org.eclipse.aether.util.repository.layout.RepositoryLayout;
 
+import com.dgwave.car.common.CeylonUtil;
+
 /**
  * This class serves as the Ceylon repo layout for both the Apache and Aether layout interfaces.
  * @author Akber Choudhry

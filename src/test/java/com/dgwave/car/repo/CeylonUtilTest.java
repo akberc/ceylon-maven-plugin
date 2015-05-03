@@ -5,7 +5,7 @@ import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
-import com.dgwave.car.repo.CeylonUtil;
+import com.dgwave.car.common.CeylonUtil;
 
 public class CeylonUtilTest {
 

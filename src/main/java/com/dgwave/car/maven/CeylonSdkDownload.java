@@ -13,7 +13,7 @@ import org.apache.maven.wagon.Wagon;
 import org.apache.maven.wagon.repository.Repository;
 import org.codehaus.plexus.util.FileUtils;
 
-import com.dgwave.car.repo.CeylonUtil;
+import com.dgwave.car.common.CeylonUtil;
 
 /**
  * Looks up 'ceylon.repo' or CEYLON_HOME/repo system property for the Ceylon system repository. 

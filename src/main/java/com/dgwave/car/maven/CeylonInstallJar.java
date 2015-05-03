@@ -32,7 +32,7 @@ import org.codehaus.plexus.util.ReaderFactory;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
 import com.dgwave.car.repo.CeylonRepoLayout;
-import com.dgwave.car.repo.CeylonUtil;
+import com.dgwave.car.common.CeylonUtil;
 
 /**
  * Project context not required. use the `-Dfile` parameter to point to a jar file.  A `pom.xml`
